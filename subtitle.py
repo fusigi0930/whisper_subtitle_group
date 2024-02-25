@@ -18,9 +18,12 @@ import random
 import re
 from moviepy.editor import *
 
+from deep_translator import GoogleTranslator
+
 class Subtitle:
     def __init__(self):
         self.audio_tmpfile = NamedTemporaryFile().name + ".mp3"
+        self.srt_tmpfile = None
 
         self.model = "small"
         self.lang = "en"
@@ -42,14 +45,45 @@ class Subtitle:
         except:
             self.recognise_result = None
 
-    def __result_to_subtitle(self):
+    def __result_to_subtitle(self, fname = None):
         if self.recognise_result == None or self.video_file == None:
             return
 
         srt_wr = get_writer("srt", os.path.dirname(self.video_file))
         filename = "{}.{}.srt".format(Path(os.path.basename(self.video_file)).stem, self.lang)
+
+        if fname != None:
+            filename = os.path.basename(fname)
+
         print("save subtitle to file {}".format(filename))
         srt_wr(self.recognise_result, filename)
+
+    def __lang_map(self, lang):
+        if lang == None:
+            return "en"
+        elif lang == "zh":
+            return "zh-TW"
+        elif lang == "jp":
+            return "ja"
+        else:
+            return "en"
+
+    def __translate(self, lang, file):
+        if file == None or not os.path.exists(file):
+            return ""
+
+        result = ""
+
+        lang = self.__lang_map(lang)
+        src_lang = self.__lang_map(self.lang)
+        gt = GoogleTranslator(source = src_lang, target = lang)
+
+        with open(file, "r", encoding="utf-8") as ori_file:
+            for line in ori_file:
+                res = gt.translate(line) + "\n"
+                result += res
+
+        return result
 
     def set_lang(self, lang):
         if lang == "en":
@@ -70,17 +104,35 @@ class Subtitle:
 
     def store_to_srt(self, lang = None):
         if lang == None or lang == self.lang:
-            print("create substitle file ...")
+            print("create subtitle file ...")
             self.__result_to_subtitle()
-        elif lang == "zh":
-            print("TBI")
-        elif lang == "en":
-            print("TBI")
+            return
+        elif lang == "zh" or lang == "en" or lang == "jp":
+            print("start translate process...")
+        else:
+            return
+
+        print("create tmp subtitle file ...")
+        self.srt_tmpfile = os.path.basename(NamedTemporaryFile().name) + ".srt"
+        self.__result_to_subtitle(self.srt_tmpfile)
+
+        result = self.__translate(lang, self.srt_tmpfile)
+        if len(os.path.dirname(self.video_file)) == 0:
+            filename = "{}.{}.srt".format(Path(os.path.basename(self.video_file)).stem, lang)
+        else:
+            filename = "{}/{}.{}.srt".format(os.path.dirname(self.video_file), Path(os.path.basename(self.video_file)).stem, lang)
+        print("create subtitle file {} ...".format(filename))
+        f = open(filename, 'w', encoding="utf-8")
+        f.write(result)
+        f.close()
 
     def close(self):
+        print("remove tmp files....")
         if os.path.exists(self.audio_tmpfile):
-            print("remove tmp files....")
             os.remove(self.audio_tmpfile)
+
+        if os.path.exists(self.srt_tmpfile):
+            os.remove(self.srt_tmpfile)
 
         self.recognise_result = None
         self.video_file = None

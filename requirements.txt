@@ -7,5 +7,6 @@ numpy==1.22.1
 wheel
 pyglet
 git+https://github.com/openai/whisper.git@v20231117
-openai
+openai==0.27.2
 moviepy
+deep-translator
