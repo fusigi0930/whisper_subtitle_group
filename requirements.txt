@@ -10,3 +10,5 @@ git+https://github.com/openai/whisper.git@v20231117
 openai==0.27.2
 moviepy
 deep-translator
+stable-ts
+progressbar
