@@ -30,7 +30,7 @@ class Subtitle:
         self.audio_tmpfile = NamedTemporaryFile().name + ".mp3"
         self.srt_tmpfile = None
 
-        self.model = "small"
+        self.model = "medium"
         self.lang = "en"
         self.video_file = None
 
@@ -151,8 +151,12 @@ class Subtitle:
         else:
             return
 
-        print("create tmp subtitle file ...")
-        self.srt_tmpfile = os.path.basename(NamedTemporaryFile().name) + ".srt"
+        orifile = "{}/{}.{}.srt".format(os.path.dirname(self.video_file), Path(os.path.basename(self.video_file)).stem, self.lang)
+        if os.path.exists(orifile):
+            self.srt_tmpfile = orifile
+        else:
+            print("create tmp subtitle file ...")
+            self.srt_tmpfile = os.path.basename(NamedTemporaryFile().name) + ".srt"
         if len(os.path.dirname(self.video_file)) == 0:
             filename = "{}.{}.srt".format(Path(os.path.basename(self.video_file)).stem, lang)
         else:
